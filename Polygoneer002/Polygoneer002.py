@@ -13,13 +13,13 @@ balls, periodBall = [], 0
 enemies, periodEnemy = [], 0
 colors = [RED, GREEN, BLUE]
 
-lDown, rDown = False, False
+# lDown, rDown = False, False
 
 pygame.init()
 
-screenWidth, screenHeight = 1280, 960
+screenWidth, screenHeight = 1920, 1080
 FPS = 60
-screen = pygame.display.set_mode((screenWidth, screenHeight))
+screen = pygame.display.set_mode((screenWidth, screenHeight), pygame.FULLSCREEN)
 
 text = pygame.font.Font(pygame.font.get_default_font(), 25)
 
@@ -34,14 +34,16 @@ class Enemy:
         color   - color of the Enemy
         nSides  - number of polygon sides"""
 
-        self.x, self.y, self.vx, self.vy, self.color, self.nSides, self.a = (
+        self.x, self.y, self.vx, self.vy, self.color, self.nSides, self.a, self.hp = (
             x,
             y,
             vx,
             vy,
             color,
             nSides,
-            0,
+            random.randint(0, 359),
+        #    nSides - 2,
+            1,
         )
 
     def updateEnemy(self):
@@ -55,18 +57,36 @@ class Enemy:
         if self.nSides == 3:
             pygame.draw.polygon(
                 enemy,
-                self.color,
+                (
+                    self.color[0],
+                    self.color[1],
+                    self.color[2],
+                    255 * self.hp #/ (self.nSides - 2),
+                ),
                 [(50 - 25 * 3 ** 0.5, 75), (50, 0), (50 + 25 * 3 ** 0.5, 75)],
                 5,
             )
         if self.nSides == 4:
             pygame.draw.polygon(
-                enemy, self.color, [(0, 50), (50, 0), (100, 50), (50, 100)], 5
+                enemy,
+                (
+                    self.color[0],
+                    self.color[1],
+                    self.color[2],
+                    255 * self.hp #/ (self.nSides - 2),
+                ),
+                [(0, 50), (50, 0), (100, 50), (50, 100)],
+                5,
             )
         if self.nSides == 5:
             pygame.draw.polygon(
                 enemy,
-                self.color,
+                (
+                    self.color[0],
+                    self.color[1],
+                    self.color[2],
+                    255 * self.hp #/ (self.nSides - 2),
+                ),
                 [
                     (50, 0),
                     (
@@ -91,7 +111,12 @@ class Enemy:
         if self.nSides == 6:
             pygame.draw.polygon(
                 enemy,
-                self.color,
+                (
+                    self.color[0],
+                    self.color[1],
+                    self.color[2],
+                    255 * self.hp #/ (self.nSides - 2),
+                ),
                 [
                     (50, 0),
                     (50 + 25 * 3 ** 0.5, 25),
@@ -197,10 +222,10 @@ while finished != True:
         if event.type == pygame.QUIT:
             finished = True
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                lDown = True
-            if event.key == pygame.K_RIGHT:
-                rDown = True
+            #    if event.key == pygame.K_LEFT:
+            #        lDown = True
+            #    if event.key == pygame.K_RIGHT:
+            #        rDown = True
             if event.key == pygame.K_z:
                 color = GREEN
                 if periodBall == 0:
@@ -213,7 +238,7 @@ while finished != True:
                             GREEN,
                         )
                     )
-                    periodBall = 30
+                    periodBall = 0
             if event.key == pygame.K_x:
                 color = BLUE
                 if periodBall == 0:
@@ -226,7 +251,7 @@ while finished != True:
                             BLUE,
                         )
                     )
-                    periodBall = 30
+                    periodBall = 0
             if event.key == pygame.K_c:
                 color = RED
                 if periodBall == 0:
@@ -239,17 +264,38 @@ while finished != True:
                             RED,
                         )
                     )
-                    periodBall = 30
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                lDown = False
-            if event.key == pygame.K_RIGHT:
-                rDown = False
+                    periodBall = 0
+            if event.key == pygame.K_ESCAPE:
+                finished = True
+    #    if event.type == pygame.KEYUP:
+    #        if event.key == pygame.K_LEFT:
+    #            lDown = False
+    #        if event.key == pygame.K_RIGHT:
+    #            rDown = False
 
-    if lDown == True:
-        phi += 5
-    if rDown == True:
-        phi -= 5
+    #    if lDown == True:
+    #        phi += 5
+    #    if rDown == True:
+    #        phi -= 5
+
+    pos = pygame.mouse.get_pos()
+    if pos[0] == screenWidth / 2:
+        if screenHeight / 2 >= pos[1]:
+            phi = 90
+        else:
+            phi = -90
+    elif pos[0] > screenWidth / 2:
+        phi = math.degrees(
+            math.atan((screenHeight / 2 - pos[1]) / (pos[0] - screenWidth / 2))
+        )
+    else:
+        phi = (
+            math.degrees(
+                math.atan((screenHeight / 2 - pos[1]) / (pos[0] - screenWidth / 2))
+            )
+            + 180
+        )
+
     if periodBall > 0:
         periodBall -= 1
     if periodEnemy > 0:
@@ -266,7 +312,7 @@ while finished != True:
                 random.randint(3, 6),
             )
         )
-        periodEnemy = random.randint(60, 120)
+        periodEnemy = random.randint(30, 60)
     updatePlayer()
     for ball in balls:
         for enemy in enemies:
@@ -274,7 +320,9 @@ while finished != True:
                 ball.y - enemy.y
             ) ** 2 < 50 ** 2 and ball.color == enemy.color:
                 balls.remove(ball)
-                enemies.remove(enemy)
+                enemy.hp -= 1
+                if enemy.hp == 0:
+                    enemies.remove(enemy)
                 points += 100
     for ball in balls:
         if ball.x < 0 or ball.x > screenWidth or ball.y < 0 or ball.y > screenHeight:
@@ -288,8 +336,8 @@ while finished != True:
             enemies.remove(enemy)
             points -= 200
         enemy.updateEnemy()
-    if points < 0:
-        finished = True
+    #    if points < 0:
+    #        finished = True
     screen.blit(text.render(str(points), 0, WHITE), (10, 10))
     pygame.display.update()
     screen.fill(BLACK)
